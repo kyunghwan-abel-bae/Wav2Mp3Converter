@@ -22,7 +22,7 @@ public:
         kPath_ = kPath;
     }
 
-    vector<string> vec_found_file_paths() { return vec_found_file_paths_; }
+    vector<string> vec_found_files_paths() { return vec_found_files_paths_; }
     
     bool ExploreWithFileType(const char kFileType[]) {
 
@@ -53,18 +53,18 @@ public:
                     strcat(file_path, kFileName);
 
                     string str_file_path = string(file_path);
-                    vec_found_file_paths_.push_back(str_file_path);
+                    vec_found_files_paths_.push_back(str_file_path);
                 }
             }
         }
 
         closedir(dir);
 
-        return true;
+        return vec_found_files_paths_.size() > 0 ? true : false;
     }
 
 private:
-    vector<string> vec_found_file_paths_;
+    vector<string> vec_found_files_paths_;
     const char* kPath_;
     int count_;
 };
