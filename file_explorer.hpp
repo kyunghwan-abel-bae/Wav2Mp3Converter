@@ -14,27 +14,27 @@ public:
 
 class FileExplorer : public FileExplorerOption {
 public:
-    FileExplorer(const char kPath[])
-        : kPath_(kPath) {}
+    FileExplorer(const char path[])
+        : path_(path) {}
 
-    const char* get_current_path() { return kPath_; }
-    void set_current_path(const char kPath[]) {
-        kPath_ = kPath;
+    const char* get_current_path() { return path_; }
+    void set_current_path(const char path[]) {
+        path_ = path;
     }
 
     vector<string> vec_found_files_paths() { return vec_found_files_paths_; }
     
-    bool ExploreWithFileType(const char kFileType[]) {
+    bool ExploreWithFileType(const char file_type[]) {
 
-        if( (strlen(kPath_) == 0) || strlen(kFileType) == 0 ) 
+        if( (strlen(path_) == 0) || strlen(file_type) == 0 ) 
             return false;
         
-        DIR *dir = opendir(kPath_);
+        DIR *dir = opendir(path_);
         if (dir == NULL)
             return false;
 
         char dir_path[FileExplorerOption::FILE_PATH_LENGTH] = {0};
-        strcat(dir_path, kPath_);
+        strcat(dir_path, path_);
         // checked by KH
         //if(dir_path[strlen(dir_path)-1] != PATH_DIVIDER)
         if(dir_path[strlen(dir_path)-1] != '/')
@@ -43,14 +43,14 @@ public:
         struct dirent *entry;
         while ((entry = readdir(dir)) != NULL) {
 
-            const char* kFileName = entry->d_name;
-            const char* kExtractedFileType = strrchr(kFileName, '.');
+            const char* file_name = entry->d_name;
+            const char* extracted_file_type = strrchr(file_name, '.');
 
-            if(kExtractedFileType != NULL) {
-                if(strcmp(kExtractedFileType, kFileType) == 0) {
+            if(extracted_file_type != NULL) {
+                if(strcmp(extracted_file_type, file_type) == 0) {
                     char file_path[FileExplorer::FILE_PATH_LENGTH] = {0};
                     strcat(file_path, dir_path);
-                    strcat(file_path, kFileName);
+                    strcat(file_path, file_name);
 
                     string str_file_path = string(file_path);
                     vec_found_files_paths_.push_back(str_file_path);
@@ -65,6 +65,6 @@ public:
 
 private:
     vector<string> vec_found_files_paths_;
-    const char* kPath_;
+    const char* path_;
     int count_;
 };

@@ -1,21 +1,26 @@
 #include "files_manager.h"
 
 main(argc) {
-    EncodingOut encoding_out = new LameEncodingOut();
-    encodingOut.set_attributes(
-            44100, vbr_default, "mp3"
-    );
-  
     FileFinder finder = new FileFinder("wav");
     const char** const list = finder.find(argc);
 
     FileLoader loader = new FileLoader();
     FileSaver saver; 
-    for(loader->next()) {
-        FileOut delegate = new FileOutImpl;
-    //    FileOut file_out = new Byte2MP3Out(encoding_out(delegate));
-        FileOut file_out = new Byte2MP3Out(encoding_out(new Wav2ByteOut(delegate)));
-        file_out.write(list[i].c_str()); 
+        
+    //Encoder encoder = new LameEncoder();
+
+    EncoderLibrary encoder_library = new LameEncoderLibrary();
+    Encoder encoder = encoder_libary->ReturnEncoderBySourceType(".wav");// encoder = new LameWavEncoder();
+    
+    /*
+    encoder.wav_size(8192);
+    encoder.mp3_size(8192);
+    encoder.sample_rate(44100);
+    */
+
+    for (vector<string>::iterator it=vec_found_files_paths.begin();it!=vec_found_files_paths.end();++it) {
+        encoder.set_encoding_source_path((*it).c_str());
+        encoder.EncodeTo("mp3");
     }
 }
 

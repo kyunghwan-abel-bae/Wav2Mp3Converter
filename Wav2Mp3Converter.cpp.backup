@@ -1,0 +1,101 @@
+// let's go with step-by-step
+
+#include <iostream>
+
+#include "file_explorer.hpp"
+
+using namespace std;
+
+
+// TEST
+class Encoder {
+public:
+    virtual ~Encoder(){};
+
+    virtual void EncodeTo(const char* to_file_type) = 0;
+
+    void set_encoding_target_path(const char* encoding_target_path) {
+        encoding_target_path_ = encoding_target_path;
+    }
+
+protected:
+    const char* encoding_target_path_;
+};
+
+class LameEncoder : public Encoder {
+public:
+    ~LameEncoder() {}
+
+    void EncodeTo(const char* to_file_type) {
+
+        switch(case
+        
+        /*
+        if(encoding_target_path_ == NULL) {
+            cout << "Failed to encode a file : Input the wav files" << endl;
+            return;
+        }
+
+
+        const char* extracted_file_type = strrchr(encoding_target_path_, '.');
+
+        switch(extracted_file_type) {
+        case ".wav":
+                cout << "find EncodeWave2Mp3" << endl;
+                // call the function WAV2MP3(encoding_target_path_)
+                break;
+        default:
+            cout << "Not supported type" << endl;
+        }
+        */
+
+        
+
+        // check file types
+        // switch(
+    }
+
+    void EncodeWav2Mp3() {
+    }
+};
+// TEST
+
+int main(int _argc, char *_argv[]) {
+
+    if(_argc != 2) {
+        cout << "Usage : " << endl;
+        return 0;
+    }
+
+    const char* path = _argv[1];
+
+    FileExplorer explorer(path);
+
+    if(!explorer.ExploreWithFileType(".wav")) {
+        cout << "Failed to find wav files at the " << path << endl;
+        return 0;
+    }
+    
+    vector<string> vec_found_files_paths = explorer.vec_found_files_paths();
+
+    Encoder *encoder = new LameEncoder("mp3");
+
+    for (vector<string>::iterator it=vec_found_files_paths.begin();it!=vec_found_files_paths.end();++it) {
+
+        encoder->set_encoding_target_path((*it).c_str());
+        encoder->EncodeTo("mp3");
+
+        /*
+        cout << "!";
+        //cout << ' ' << *it;
+        cout << ' ' << (*it).c_str();
+        cout << endl;
+        */
+    }
+
+    delete encoder;
+
+    return 0;
+}
+
+
