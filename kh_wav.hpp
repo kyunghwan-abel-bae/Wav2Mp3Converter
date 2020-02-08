@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <fstream>
 
 class KHWav {
 public:
@@ -10,6 +11,7 @@ public:
     int16_t get_channels() const;
 
     int get_samples( unsigned int offset, unsigned int size, short int* samples) const;
+    int get_samples( unsigned int offset, unsigned int size, char* samples) const;
 
     struct RIFF {
         char riffID[4];
@@ -118,6 +120,17 @@ int16_t KHWav::get_channels() const {
 }
 
 int KHWav::get_samples( unsigned int offset, unsigned int size, short int* samples) const {
+    if( offset > (unsigned int)data_.dataSIZE)
+        return 0;
+
+    unsigned int real_size = (offset + size) < (unsigned int)data_.dataSIZE ? size : ((unsigned)data_.dataSIZE - offset);
+
+    std::copy(&wav_[offset], &wav_[offset+real_size], samples);
+
+    return real_size;
+}
+
+int KHWav::get_samples( unsigned int offset, unsigned int size, char* samples) const {
     if( offset > (unsigned int)data_.dataSIZE)
         return 0;
 

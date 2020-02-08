@@ -1,6 +1,6 @@
 #include <lame/lame.h>
 
-#include "my_wave.h"
+#include "my_wav.hpp"
 
 class Encoder {
 public:
@@ -40,8 +40,10 @@ public:
         if(strcmp(file_type, ".mp3") == 0) {
             // ofstream mp3(des)
             
-            if(num_threads_ > 0) EncodeToMp3(num_threads_);
-            else EncodeToMp3();
+            EncodeToMp3();
+            //else EncodeToMp3();
+            //if(num_threads_ > 0) EncodeToMp3(num_threads_);
+            //else EncodeToMp3();
 
             //else EncodeToMp3(wave, mp3);
         } else  {
@@ -51,33 +53,10 @@ public:
     }
 
     void EncodeToMp3(int num_threads) {
-
-        int source_length = strlen(encoding_source_path_);
-
-        char encoding_destination_path[source_length] = {};
-
-        strncpy(encoding_destination_path, encoding_source_path_, (source_length-Encoder::DOT_WAV_LENGTH));
-
-        strcat(encoding_destination_path, ".mp3");
-
-        MyWave wav(encoding_source_path_); 
-
-        std::ofstream mp3(encoding_destination_path, std::ios_base::binary|std::ios_base::out);
-
-// ###################### HERE IS NEW FUNCTION #########
-
-
-
-
-
     }
 
+   
     void EncodeToMp3() {
-        // test by KH
-        /*
-        cout << "encode to mp3" << endl;
-        cout << "file_soure : " << encoding_source_path_ << endl;
-        */
 
         int source_length = strlen(encoding_source_path_);
 
@@ -87,31 +66,26 @@ public:
         
         strcat(encoding_destination_path, ".mp3");
 
-        // Wave file analysis using MyWave
-        // if(num_threads_ > 0) 
-        //      encoding_mp3_with_pthread(&mywave)
-
-        MyWave wav(encoding_source_path_); 
+        MyWav wav(encoding_source_path_); 
 
         std::ofstream mp3(encoding_destination_path, std::ios_base::binary|std::ios_base::out);
 
-        //// ############# HERE IS NEW FUNCTION ##############
-        /*
-        unsigned sample_rate = wav.get_samples_per_sec();
-        unsigned byte_rate = wav.get_avg_bytes_per_sec();
-        unsigned channels = wav.get_channels();
+        unsigned int sample_rate = wav.get_samples_per_sec();
+        unsigned int byte_rate = wav.get_avg_bytes_per_sec();
+        unsigned int channels = wav.get_channels();
 
-        const int WAV_SIZE = 8192;
-        const int MP3_SIZE = 8192;
+        const int kWAV_SIZE = 8192;
+        const int kMP3_SIZE = 8192;
 
-        unsigned offset = 0;
+        unsigned int offset = 0;
+        unsigned int k = (channels == 1) ? 1: 2;
+        unsigned int size = kWAV_SIZE * k * sizeof(short int);
 
         std::vector<char> wav_buffer;
-        wav_buffer.reserve( sizeof(short int) * WAV_SIZE * 2);
-        unsigned mp3_buffer[MP3_SIZE];
+        wav_buffer.reserve( sizeof(short int) * kWAV_SIZE * k );
+        unsigned char mp3_buffer[kMP3_SIZE];
 
         lame_t lame = lame_init();
-        // 		lame_global_flags *gfp = lame_init();
 
         lame_set_in_samplerate(lame, sample_rate);
         lame_set_brate(lame, byte_rate);
@@ -128,11 +102,10 @@ public:
         lame_init_params(lame);
 
         while( true ) {
-            int k = (channels == 1) ? 1 : 2;
-            unsigned size = WAV_SIZE * k * sizeof( short int );
-            wav.get_samples(offset, size, wav_buffer);
-            unsigned read = wav_buffer.size();
+            wav.get_samples( offset, size, wav_buffer );
 
+            unsigned int read = wav_buffer.size();
+               
             offset += read;
 
             if(read > 0) {
@@ -141,96 +114,30 @@ public:
                 if(channels == 1) {
                     // improved by KH
                     unsigned read_shorts = read / 2;
-
-                    //write = lame_encode_buffer(lame, reinterpret_cast<short int*>(&wav_buffer[0]), NULL, read_shorts, mp3_buffer, MP3_SIZE);
-                    write = lame_encode_buffer( lame, reinterpret_cast<short int*>(&wav_buffer[0]), NULL, read_shorts, mp3_buffer, MP3_SIZE );
+                    write = lame_encode_buffer( lame, reinterpret_cast<short int*>( &wav_buffer[0] ), NULL, read_shorts, mp3_buffer, kMP3_SIZE );
                 }
                 else {
                     // improved by KH
-                    unsigned read_shorts = read / 4;
+                    unsigned int read_shorts = read / 4;
 
-                    write = lame_encode_buffer_interleaved( lame, reinterpret_cast<short int*>(&wav_buffer[0]), read_shorts, mp3_buffer, MP3_SIZE );
+                    write = lame_encode_buffer_interleaved( lame, reinterpret_cast<short int*>( &wav_buffer[0] ), read_shorts, mp3_buffer, kMP3_SIZE );
                 }
 
                 wav_buffer.clear();
-                mp3.write( reinterpret_cast<char*>(mp3_buffer), write);
+
+                mp3.write( reinterpret_cast<char*>( mp3_buffer ) , write );
             }
 
+
+
             if(read < size) {
-                int write = lame_encode_flush(lame, mp3_buffer, MP3_SIZE);
+                int write = lame_encode_flush(lame, mp3_buffer, kMP3_SIZE);
                 mp3.write( reinterpret_cast<char*>(mp3_buffer), write);
 
                 break;
             }
         }
-
         lame_close(lame);
-        */
-
-        /*
-        do {
-            read = fread(pcm_buffer, 2*sizeof(short int), PCM_SIZE, pcm);
-            if (read == 0)
-                write = lame_encode_flush(lame, mp3_buffer, MP3_SIZE);
-            else
-                write = lame_encode_buffer_interleaved(lame, pcm_buffer, read, mp3_buffer, MP3_SIZE);
-            fwrite(mp3_buffer, write, 1, mp3);
-        } while (read != 0);
-        */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-
-        // test by KH
-        //cout << "file_destination : " << encoding_destination_path << endl;
-/*
-        int read, write;
-
-        FILE *wav = fopen(encoding_source_path_, "rb");
-        FILE *mp3 = fopen(encoding_destination_path, "wb");
-
-        const int WAV_SIZE = 8192;
-        const int MP3_SIZE = 8192;
-
-        short int wav_buffer[WAV_SIZE*2];
-        unsigned char mp3_buffer[MP3_SIZE];
-
-        lame_t lame = lame_init();
-        lame_set_in_samplerate(lame, 44100);
-        lame_set_VBR(lame, vbr_default);
-        lame_init_params(lame);
-
-        do {
-            read = fread(wav_buffer, 2*sizeof(short int), WAV_SIZE, wav);
-            if (read == 0)
-                write = lame_encode_flush(lame, mp3_buffer, MP3_SIZE);
-            else
-                write = lame_encode_buffer_interleaved(lame, wav_buffer, read, mp3_buffer, MP3_SIZE);
-
-            fwrite(mp3_buffer, write, 1, mp3);
-        } while (read != 0);
-
-        lame_close(lame);
-        fclose(mp3);
-        fclose(wav);
-
-        */
     }
 };
 
