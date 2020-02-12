@@ -16,7 +16,7 @@ public:
     int32_t get_avg_bytes_per_sec() const;
     int16_t get_channels() const;
 
-    void get_samples( unsigned int offset, unsigned int size, std::vector<char>& samples) const;
+    void get_samples( unsigned int offset, unsigned int size, std::vector<unsigned char>& samples) const;
 
     struct RIFF
     {
@@ -129,7 +129,7 @@ int16_t MyWav::get_channels() const {
     return fmt_.nChannels;
 }
 
-void MyWav::get_samples( unsigned int offset, unsigned int size, std::vector<char>& samples) const {
+void MyWav::get_samples( unsigned int offset, unsigned int size, std::vector<unsigned char>& samples) const {
     if( offset > (unsigned)data_.dataSIZE )
         return;
 
