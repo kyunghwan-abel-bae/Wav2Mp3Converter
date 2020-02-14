@@ -2,6 +2,8 @@
 #include <pthread.h>
 
 #include "my_wav.hpp"
+
+using namespace std;
     
 typedef struct {
     //lame_global_flags*   lame;
@@ -18,8 +20,10 @@ void *EncodeMP3ByThread(void *thread_args) {
 
     std::cout << "EncodeMP3ByThread" << std::endl;
     
-    LAME_ENCODE_ARGS* arg = (LAME_ENCODE_ARGS*) thread_args;
+    //LAME_ENCODE_ARGS* arg = (LAME_ENCODE_ARGS*) thread_args;
+    LAME_ENCODE_ARGS* arg = reinterpret_cast<LAME_ENCODE_ARGS*>(thread_args);
    
+    // Below codes can be replaced with multiple lines.
     *(arg->num_encoded_samples) = lame_encode_buffer_interleaved(*(arg->lame), reinterpret_cast<short int*>(arg->wav_buffer), *(arg->num_samples), arg->mp3_buffer, arg->mp3_buffer_size);
 
     //*(arg->num_encoded_samples) = lame_encode_buffer_interleaved(lame, reinterpret_cast<short int*>(arg->wav_buffer), *(arg->num_samples), arg->mp3_buffer, arg->mp3_buffer_size);
@@ -34,7 +38,7 @@ class Encoder {
 public:
     Encoder() : num_threads_(1) {}
 
-    virtual ~Encoder(){};
+    virtual ~Encoder(){}
 
     virtual void EncodeTo(const char* file_type) = 0;
 
@@ -81,6 +85,7 @@ public:
 
         lame_set_VBR(*lame, vbr_default);
         lame_init_params(*lame);
+
     }
 
     void EncodeTo(const char* file_type = "") {
@@ -99,22 +104,18 @@ public:
         } else  {
             cout << "unsupported file type" << endl;
         }
-        
     }
 
     void EncodeToMp3(int num_threads) {
 
-        int source_length = strlen(encoding_source_path_);
+        cout << "encoding_source_path_ : " << encoding_source_path_ << endl;
 
-        char encoding_destination_path[source_length] = {};
+        string str_encoding_source_path(encoding_source_path_);
+        string str_encoding_destination_path = str_encoding_source_path.substr(0, str_encoding_source_path.length() - Encoder::DOT_WAV_LENGTH) + ".mp3";
 
-        strncpy(encoding_destination_path, encoding_source_path_, (source_length-Encoder::DOT_WAV_LENGTH));
+        MyWav wav(encoding_source_path_);
 
-        strcat(encoding_destination_path, ".mp3");
-
-        MyWav wav(encoding_source_path_); 
-
-        std::ofstream mp3(encoding_destination_path, std::ios_base::binary|std::ios_base::out);
+        std::ofstream mp3(str_encoding_destination_path, std::ios_base::binary|std::ios_base::out);
 
         unsigned int sample_rate = wav.get_samples_per_sec();
         unsigned int byte_rate = wav.get_avg_bytes_per_sec();
@@ -127,23 +128,34 @@ public:
         pthread_t *threads = new pthread_t[num_threads];
         LAME_ENCODE_ARGS *thread_args = new LAME_ENCODE_ARGS[num_threads];
 
-        lame_t lame[num_threads];
+        //lame_t lame[num_threads];
+        // typedef lame_global_flags *lame_t;
+        // lame_global_flags*
+        lame_t* lame = new lame_t[num_threads];
 
-        std::vector<unsigned char> wav_buffer[num_threads];
+        //std::vector<unsigned char> wav_buffer[num_threads];
+        std::vector< std::vector<unsigned char> > wav_buffer;
 
-        unsigned char mp3_buffer[num_threads][MP3_SIZE] = {};
+        //unsigned char mp3_buffer[num_threads][MP3_SIZE] = {};
+        std::vector< std::vector<unsigned char> > mp3_buffer;
 
-        unsigned int num_samples[num_threads] = {};
-        unsigned int num_encoded_samples[num_threads] = {};
+        unsigned int* num_samples = new unsigned int[num_threads];
+        unsigned int* num_encoded_samples = new unsigned int[num_threads];
 
         // test_point
 
         // Init thread_args
         for(int i=0;i<num_threads;i++) {
-            SetLameEncodeOptions(&(lame[i]), channels, sample_rate, byte_rate);
-            wav_buffer[i].reserve( sizeof(short int) * WAV_SIZE * k ); 
+            std::vector<unsigned char> wav_buffer_element;
+            wav_buffer_element.resize(sizeof(short int) * WAV_SIZE * k);
+            wav_buffer.push_back(wav_buffer_element);
 
-            // init
+            std::vector<unsigned char> mp3_buffer_element;
+            mp3_buffer_element.resize(sizeof(unsigned char) * MP3_SIZE);
+            mp3_buffer.push_back(mp3_buffer_element);
+
+            SetLameEncodeOptions(&(lame[i]), channels, sample_rate, byte_rate);
+
             thread_args[i].lame = &(lame[i]);
             thread_args[i].wav_buffer = &(wav_buffer[i][0]);
             thread_args[i].mp3_buffer = &(mp3_buffer[i][0]);
@@ -156,13 +168,13 @@ public:
         int test_count = 0;
 
         bool is_done = false;
+        unsigned int* read = new unsigned int[num_threads];
+        unsigned int* write = new unsigned int[num_threads];
+
         while( true ) {
-           /* 
-            if(++for_test == 3000)
-                break;
-           */ 
-            unsigned int read[num_threads] = {};
-            unsigned int write[num_threads] = {};
+
+//            if(++for_test == 3)
+//                break;
 
             // extract samples (in thread_args[i].wav_buffer)
             for(int i=0;i<num_threads;i++) {
@@ -172,11 +184,11 @@ public:
                 read[i] = wav_buffer[i].size();
                 
                 offset += read[i];
-            }                
+            }
 
             // create thread
             for (int i=0;i<num_threads;i++) {
-                memset(mp3_buffer[i], 0, sizeof(mp3_buffer[i]));
+                mp3_buffer[i].clear();
 
                 if(read[i] < size) {
                     num_threads = i;
@@ -199,7 +211,9 @@ public:
 
             // writing
             for(int i=0;i<num_threads;i++) {
-                mp3.write( reinterpret_cast<char*>(&mp3_buffer[i]), num_encoded_samples[i]);  
+                unsigned char* pointer_mp3_buffer;
+                pointer_mp3_buffer = &(mp3_buffer[i][0]);
+                mp3.write( reinterpret_cast<char*>(pointer_mp3_buffer), num_encoded_samples[i]);
                 cout << mp3.tellp() << endl;
             }
             cout << "end loop" << endl;
@@ -215,9 +229,17 @@ public:
             }
         }
 
+        /*
         for(int i=0;i<num_threads;i++) {
             lame_close(lame[i]);
         }
+
+        */
+        delete[] read;
+        delete[] write;
+        delete[] num_encoded_samples;
+        delete[] num_samples;
+        delete[] lame;
 
         delete[] threads;
         delete[] thread_args;
@@ -225,6 +247,7 @@ public:
 
    
     void EncodeToMp3() {
+        /*
         int source_length = strlen(encoding_source_path_);
 
         char encoding_destination_path[source_length] = {};
@@ -305,6 +328,7 @@ public:
             }
         }
         lame_close(lame);
+        */
     }
 };
 
