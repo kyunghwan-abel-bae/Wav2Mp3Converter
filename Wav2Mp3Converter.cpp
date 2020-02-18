@@ -36,9 +36,11 @@ int main(int _argc, char *_argv[]) {
     //encoder->set_num_threads(num_threads);
     encoder->set_num_threads(2);
     for (auto it=vec_found_files_paths.begin();it!=vec_found_files_paths.end();++it) {
-        encoder->set_encoding_source_path((*it).c_str());
-        encoder->EncodeTo(".mp3");
+        //encoder->set_encoding_source_path((*it).c_str());
+        encoder->add_encoding_source_path(*it);
+        //encoder->EncodeTo(".mp3");
     }
+    encoder->EncodeTo(".mp3");
 
     //delete encoder;
     //delete encoder_library;

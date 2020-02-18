@@ -16,20 +16,87 @@ typedef struct {
     unsigned int         mp3_buffer_size; 
 } LAME_ENCODE_ARGS;
 
-void *EncodeMP3ByThread(void *thread_args) {
+void* EncodeMP3ByThread(void *thread_args) {
 
-    std::cout << "EncodeMP3ByThread" << std::endl;
-    
-    //LAME_ENCODE_ARGS* arg = (LAME_ENCODE_ARGS*) thread_args;
-    LAME_ENCODE_ARGS* arg = reinterpret_cast<LAME_ENCODE_ARGS*>(thread_args);
-   
-    // Below codes can be replaced with multiple lines.
-    *(arg->num_encoded_samples) = lame_encode_buffer_interleaved(*(arg->lame), reinterpret_cast<short int*>(arg->wav_buffer), *(arg->num_samples), arg->mp3_buffer, arg->mp3_buffer_size);
+    const int kWAV_SIZE = 8192;
+    const int kMP3_SIZE = 8192;
 
-    //*(arg->num_encoded_samples) = lame_encode_buffer_interleaved(lame, reinterpret_cast<short int*>(arg->wav_buffer), *(arg->num_samples), arg->mp3_buffer, arg->mp3_buffer_size);
-    
-    //*(arg->num_encoded_samples) = lame_encode_buffer_interleaved(*(arg->lame), reinterpret_cast<short int*>(&(*(arg->wav_buffer))[0]), *(arg->num_samples), arg->mp3_buffer, arg->mp3_buffer_size);
-    
+    const char* source_path = reinterpret_cast<const char*>(thread_args);
+
+    string str_encoding_source_path(source_path);
+
+    size_t index_dot = str_encoding_source_path.find_last_of(".");
+    string str_encoding_destination_path = str_encoding_source_path.substr(0, index_dot) + ".mp3";
+
+    MyWav wav(source_path);
+
+    std::ofstream mp3(str_encoding_destination_path, std::ios_base::binary|std::ios_base::out);
+
+    unsigned int sample_rate = wav.get_samples_per_sec();
+    unsigned int byte_rate = wav.get_avg_bytes_per_sec();
+    unsigned int channels = wav.get_channels();
+
+    unsigned int offset = 0;
+    unsigned int k = (channels == 1) ? 1 : 2;
+    unsigned int size = kWAV_SIZE * k * sizeof(short int);
+
+    std::vector<unsigned char> wav_buffer;
+    wav_buffer.reserve( sizeof(short int) * kWAV_SIZE * k);
+    unsigned char mp3_buffer[kMP3_SIZE];
+
+    lame_t lame = lame_init();
+
+    lame_set_in_samplerate(lame, sample_rate);
+    lame_set_brate(lame, byte_rate);
+
+    if(channels == 1) {
+        lame_set_num_channels(lame, 1);
+        lame_set_mode(lame, MONO);
+    }
+    else {
+        lame_set_num_channels(lame, channels);
+    }
+
+    lame_set_VBR(lame, vbr_default);
+    lame_init_params(lame);
+
+
+    while( true ) {
+        wav.get_samples( offset, size, wav_buffer );
+
+        unsigned int read = wav_buffer.size();
+
+        offset += read;
+
+        if(read > 0) {
+            int write = 0;
+
+            if(channels == 1) {
+                // improved by KH
+                unsigned read_shorts = read / 2;
+                write = lame_encode_buffer( lame, reinterpret_cast<short int*>( &wav_buffer[0] ), NULL, read_shorts, mp3_buffer, kMP3_SIZE );
+            }
+            else {
+                // improved by KH
+                unsigned int read_shorts = read / 4;
+
+                write = lame_encode_buffer_interleaved( lame, reinterpret_cast<short int*>( &wav_buffer[0] ), read_shorts, mp3_buffer, kMP3_SIZE );
+            }
+
+            wav_buffer.clear();
+
+            mp3.write( reinterpret_cast<char*>( mp3_buffer ) , write );
+        }
+
+        if(read < size) {
+            int write = lame_encode_flush(lame, mp3_buffer, kMP3_SIZE);
+            mp3.write( reinterpret_cast<char*>(mp3_buffer), write);
+
+            break;
+        }
+    }
+
+    lame_close(lame);
 
     return NULL;
 }
@@ -42,6 +109,14 @@ public:
 
     virtual void EncodeTo(const char* file_type) = 0;
 
+    void add_encoding_source_path(const string encoding_source_path) {
+        encoding_source_paths_.push_back(encoding_source_path);
+    }
+
+    void add_encoding_source_path(const char* encoding_source_path) {
+        add_encoding_source_path(string(encoding_source_path));
+    }
+
     void set_encoding_source_path(const char* encoding_source_path) {
         encoding_source_path_ = encoding_source_path;
     }
@@ -53,21 +128,12 @@ public:
 protected:
     int num_threads_;
     const char* encoding_source_path_;
-
-    enum {
-        DOT_WAV_LENGTH = 4,
-    };
+    vector<string> encoding_source_paths_;
 };
 
 class LameWavEncoder : public Encoder {
 public:
-
     ~LameWavEncoder() {}
-
-    enum { 
-        WAV_SIZE = 8192,
-        MP3_SIZE = 8192,
-    };
 
     void SetLameEncodeOptions(lame_t* lame, unsigned int channels, unsigned int sample_rate, unsigned int byte_rate) {
         *lame = lame_init();
@@ -90,245 +156,42 @@ public:
 
     void EncodeTo(const char* file_type = "") {
 
-        // MyWave wave(src)
+        void* (*func_worker)(void*) = NULL;
 
         if(strcmp(file_type, ".mp3") == 0) {
-            // ofstream mp3(des)
-            
-            EncodeToMp3(num_threads_);
-            //else EncodeToMp3();
-            //if(num_threads_ > 0) EncodeToMp3(num_threads_);
-            //else EncodeToMp3();
-
-            //else EncodeToMp3(wave, mp3);
-        } else  {
-            cout << "unsupported file type" << endl;
+            func_worker = EncodeMP3ByThread;
         }
-    }
+        else
+            return;
 
-    void EncodeToMp3(int num_threads) {
+        pthread_t *threads = new pthread_t[num_threads_];
 
-        cout << "encoding_source_path_ : " << encoding_source_path_ << endl;
-
-        string str_encoding_source_path(encoding_source_path_);
-        string str_encoding_destination_path = str_encoding_source_path.substr(0, str_encoding_source_path.length() - Encoder::DOT_WAV_LENGTH) + ".mp3";
-
-        MyWav wav(encoding_source_path_);
-
-        std::ofstream mp3(str_encoding_destination_path, std::ios_base::binary|std::ios_base::out);
-
-        unsigned int sample_rate = wav.get_samples_per_sec();
-        unsigned int byte_rate = wav.get_avg_bytes_per_sec();
-        unsigned int channels = wav.get_channels();
-
-        unsigned int offset = 0;
-        unsigned int k = (channels == 1) ? 1: 2;
-        unsigned int size = WAV_SIZE * k * sizeof(short int);
-
-        pthread_t *threads = new pthread_t[num_threads];
-        LAME_ENCODE_ARGS *thread_args = new LAME_ENCODE_ARGS[num_threads];
-
-        //lame_t lame[num_threads];
-        // typedef lame_global_flags *lame_t;
-        // lame_global_flags*
-        lame_t* lame = new lame_t[num_threads];
-
-        //std::vector<unsigned char> wav_buffer[num_threads];
-        std::vector< std::vector<unsigned char> > wav_buffer;
-
-        //unsigned char mp3_buffer[num_threads][MP3_SIZE] = {};
-        std::vector< std::vector<unsigned char> > mp3_buffer;
-
-        unsigned int* num_samples = new unsigned int[num_threads];
-        unsigned int* num_encoded_samples = new unsigned int[num_threads];
-
-        // test_point
-
-        // Init thread_args
-        for(int i=0;i<num_threads;i++) {
-            std::vector<unsigned char> wav_buffer_element;
-            wav_buffer_element.resize(sizeof(short int) * WAV_SIZE * k);
-            wav_buffer.push_back(wav_buffer_element);
-
-            std::vector<unsigned char> mp3_buffer_element;
-            mp3_buffer_element.resize(sizeof(unsigned char) * MP3_SIZE);
-            mp3_buffer.push_back(mp3_buffer_element);
-
-            SetLameEncodeOptions(&(lame[i]), channels, sample_rate, byte_rate);
-
-            thread_args[i].lame = &(lame[i]);
-            thread_args[i].wav_buffer = &(wav_buffer[i][0]);
-            thread_args[i].mp3_buffer = &(mp3_buffer[i][0]);
-            thread_args[i].num_samples = &(num_samples[i]);
-            thread_args[i].num_encoded_samples = &(num_encoded_samples[i]);
-            thread_args[i].mp3_buffer_size = MP3_SIZE;
-        }
-
-        int for_test = 0;
-        int test_count = 0;
-
+        auto it = encoding_source_paths_.begin();
         bool is_done = false;
-        unsigned int* read = new unsigned int[num_threads];
-        unsigned int* write = new unsigned int[num_threads];
-
-        while( true ) {
-
-//            if(++for_test == 3)
-//                break;
-
-            // extract samples (in thread_args[i].wav_buffer)
-            for(int i=0;i<num_threads;i++) {
-                wav_buffer[i].clear();
-
-                wav.get_samples( offset, size, wav_buffer[i] );
-                read[i] = wav_buffer[i].size();
-                
-                offset += read[i];
-            }
-
-            // create thread
-            for (int i=0;i<num_threads;i++) {
-                mp3_buffer[i].clear();
-
-                if(read[i] < size) {
-                    num_threads = i;
+        while(true) {
+            for(int i=0;i<num_threads_;i++) {
+                if(it == encoding_source_paths_.end()) {
                     is_done = true;
+                    num_threads_ = i;
                     break;
                 }
 
-                if(channels == 1) {
-                }
-                else {
-                    num_samples[i] = read[i] / 4; // 4 stands for sizeof(unsigned int)
-                    pthread_create(&threads[i], NULL, EncodeMP3ByThread, (void*)(&thread_args[i]));
-                }
+                cout << "thread index : " << i << endl;
+
+                pthread_create(&threads[i], NULL, func_worker, (void*)((*it).c_str()));
+
+                ++it;
             }
 
-            // wait threads
-            for (int i=0;i<num_threads;i++) {
-                pthread_join( threads[i], NULL );
+            for(int i=0;i<num_threads_;i++) {
+                pthread_join(threads[i], NULL);
             }
 
-            // writing
-            for(int i=0;i<num_threads;i++) {
-                unsigned char* pointer_mp3_buffer;
-                pointer_mp3_buffer = &(mp3_buffer[i][0]);
-                mp3.write( reinterpret_cast<char*>(pointer_mp3_buffer), num_encoded_samples[i]);
-                cout << mp3.tellp() << endl;
-            }
-            cout << "end loop" << endl;
-
-
-            // flush final part
-            if(is_done) {
-                unsigned char last_mp3buf[MP3_SIZE] = {};
-                int num_encoded_samples = lame_encode_flush( lame[0], last_mp3buf, MP3_SIZE ); 
-
-                mp3.write( reinterpret_cast<char*>(last_mp3buf) , num_encoded_samples );
+            if(is_done)
                 break;
-            }
         }
-
-        /*
-        for(int i=0;i<num_threads;i++) {
-            lame_close(lame[i]);
-        }
-
-        */
-        delete[] read;
-        delete[] write;
-        delete[] num_encoded_samples;
-        delete[] num_samples;
-        delete[] lame;
 
         delete[] threads;
-        delete[] thread_args;
-    }
-
-   
-    void EncodeToMp3() {
-        /*
-        int source_length = strlen(encoding_source_path_);
-
-        char encoding_destination_path[source_length] = {};
-
-        strncpy(encoding_destination_path, encoding_source_path_, (source_length-Encoder::DOT_WAV_LENGTH));
-        
-        strcat(encoding_destination_path, ".mp3");
-
-        MyWav wav(encoding_source_path_); 
-
-        std::ofstream mp3(encoding_destination_path, std::ios_base::binary|std::ios_base::out);
-
-        unsigned int sample_rate = wav.get_samples_per_sec();
-        unsigned int byte_rate = wav.get_avg_bytes_per_sec();
-        unsigned int channels = wav.get_channels();
-
-        //const int WAV_SIZE = 8192;
-        //const int MP3_SIZE = 8192;
-
-        unsigned int offset = 0;
-        unsigned int k = (channels == 1) ? 1: 2;
-        unsigned int size = WAV_SIZE * k * sizeof(short int);
-
-        std::vector<unsigned char> wav_buffer;
-        wav_buffer.reserve( sizeof(short int) * WAV_SIZE * k );
-        unsigned char mp3_buffer[MP3_SIZE];
-
-        lame_t lame = lame_init();
-
-        lame_set_in_samplerate(lame, sample_rate);
-        lame_set_brate(lame, byte_rate);
-
-        if(channels == 1) {
-            lame_set_num_channels(lame, 1);
-            lame_set_mode(lame, MONO);
-        }
-        else {
-            lame_set_num_channels(lame, channels);
-        }
-
-        lame_set_VBR(lame, vbr_default);
-        lame_init_params(lame);
-
-        while( true ) {
-            wav.get_samples( offset, size, wav_buffer );
-
-            unsigned int read = wav_buffer.size();
-               
-            offset += read;
-
-            if(read > 0) {
-                int write = 0;
-
-                if(channels == 1) {
-                    // improved by KH
-                    unsigned read_shorts = read / 2;
-                    write = lame_encode_buffer( lame, reinterpret_cast<short int*>( &wav_buffer[0] ), NULL, read_shorts, mp3_buffer, MP3_SIZE );
-                }
-                else {
-                    // improved by KH
-                    unsigned int read_shorts = read / 4;
-
-                    write = lame_encode_buffer_interleaved( lame, reinterpret_cast<short int*>( &wav_buffer[0] ), read_shorts, mp3_buffer, MP3_SIZE );
-                }
-
-                wav_buffer.clear();
-
-                mp3.write( reinterpret_cast<char*>( mp3_buffer ) , write );
-            }
-
-
-
-            if(read < size) {
-                int write = lame_encode_flush(lame, mp3_buffer, MP3_SIZE);
-                mp3.write( reinterpret_cast<char*>(mp3_buffer), write);
-
-                break;
-            }
-        }
-        lame_close(lame);
-        */
     }
 };
 

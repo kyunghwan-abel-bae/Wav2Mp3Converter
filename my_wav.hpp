@@ -89,6 +89,8 @@ MyWav::MyWav (const char* file_name) {
 
     unsigned fmt_extra_bytes = fmthdr_.fmtSIZE - FMT_SIZE;
 
+    std::cout << "point" << std::endl;
+
     if( fmt_extra_bytes > 0 ) {
         fmt_extra_bytes_.resize( fmt_extra_bytes );
         file.read( &fmt_extra_bytes_[0], fmt_extra_bytes );
