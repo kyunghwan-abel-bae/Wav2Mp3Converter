@@ -8,8 +8,8 @@ using namespace std;
 
 int main(int _argc, char *_argv[]) {
 
-    if(_argc != 2) {
-        cout << "Usage : " << endl;
+    if (_argc != 2) {
+        cerr << "Usage: " << _argv[0] << " PATH [-nN]" << endl;
         return 0;
     }
 
@@ -29,7 +29,7 @@ int main(int _argc, char *_argv[]) {
 
     unsigned int num_threads = thread::hardware_concurrency();
 
-    encoder->set_num_threads(1);
+    encoder->set_num_threads(num_threads);
     for (auto it=vec_found_files_paths.begin();it!=vec_found_files_paths.end();++it) {
         encoder->add_encoding_source_path(*it);
     }

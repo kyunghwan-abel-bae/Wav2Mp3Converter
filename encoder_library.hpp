@@ -28,9 +28,6 @@ void* EncodeMP3ByThread(void *thread_args) {
     size_t index_dot = str_encoding_source_path.find_last_of(".");
     string str_encoding_destination_path = str_encoding_source_path.substr(0, index_dot) + ".mp3";
 
-//    cout << "source : " << str_encoding_source_path << endl;
-//    cout << "des : " << str_encoding_destination_path << endl;
-
     MyWav wav(source_path);
     if(!wav.is_valid_file()) {
         cerr << "NOT VALID FILE : " << source_path << endl;

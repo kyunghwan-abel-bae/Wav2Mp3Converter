@@ -71,11 +71,8 @@ public:
 
             if(extracted_file_type != nullptr) {
                 if(strcmp(extracted_file_type, file_type) == 0) {
-                    char file_path[FileExplorer::FILE_PATH_LENGTH] = {0};
-                    strcat(file_path, dir_path);
-                    strcat(file_path, file_name);
+                    string str_file_path = path + string(file_name);
 
-                    string str_file_path = string(file_path);
                     vec_found_files_paths_.push_back(str_file_path);
                 }
             }

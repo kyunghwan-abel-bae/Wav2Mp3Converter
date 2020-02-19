@@ -2,12 +2,21 @@
 
 All notable logs show how I solved many issues in this project
 
+## 2020-2-18
+- Encoding works with the file-based encoding in the multi-thread environment
+
+## 2020-2-16
+- Through debug process, there are thread safe issues. Each pthread processes are affected by each other when the function has global pthread variable.
+
+I found out lame encode functions are not working correctly at the pthread environment because of thread safe issue 
+
+## 2020-2-13
+- Using Qt, I imported project in OS X for efficient debugging (Debug issue is about lame functions in multi-thread encoding)
 
 ## 2020-2-11
 
-- The structure for multithread processes(sample-base) is prepared
+- The structure for multithread processes(sample-based) is prepared
 - Encoding works with single thread in the multithread design
-
 
 ## 2020-2-9
 
