@@ -4,17 +4,20 @@
 #include <dirent.h>
 #include <sys/types.h>
 
+/// test
+#include <iostream>
+
 using namespace std;
 
 #ifdef WIN32
-#define PATHSEP '\\'
+#define PATHSEP "\\"
 #else
-#define PATHSEP '/'
+#define PATHSEP "/"
 #endif
 
 class FileExplorerOption {
 public:
-    enum { 
+    enum {
         FILE_PATH_LENGTH = 255,
     };
 };
@@ -30,12 +33,12 @@ public:
     }
 
     vector<string> vec_found_files_paths() { return vec_found_files_paths_; }
-    
+
     bool ExploreWithFileType(const char file_type[]) {
 
-        if( (strlen(path_) == 0) || strlen(file_type) == 0 ) 
+        if( (strlen(path_) == 0) || strlen(file_type) == 0 )
             return false;
-        
+
         DIR *dir = opendir(path_);
         if (dir == nullptr)
             return false;
@@ -47,9 +50,18 @@ public:
         if(length_dir_path > FileExplorerOption::FILE_PATH_LENGTH)
             return false;
 
-        char path_sep[1] = {PATHSEP};
-        if(dir_path[length_dir_path-1] != path_sep[0])
-            strcat(dir_path, path_sep);
+        string path(dir_path);
+        string path_sep(PATHSEP);
+
+        size_t index_path_sep = path.find_last_of(PATHSEP);
+        if(index_path_sep != (path.length()-path_sep.length())) {
+            // test by KH
+            cout << "it didn't end with " << PATHSEP << endl;
+            path += path_sep;
+        }
+
+        // test by KH
+        std::cout << "path : " << path << std::endl;
 
         struct dirent *entry;
         while ((entry = readdir(dir)) != nullptr) {

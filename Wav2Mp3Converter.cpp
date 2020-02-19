@@ -1,5 +1,3 @@
-// let's go with step-by-step
-
 #include <iostream>
 #include <thread>
 
@@ -20,7 +18,7 @@ int main(int _argc, char *_argv[]) {
     FileExplorer explorer(path);
 
     if(!explorer.ExploreWithFileType(".wav")) {
-        cout << "Failed to find wav files at the " << path << endl;
+        cerr << "Failed to find wav files at the " << path << endl;
         return 0;
     }
     
@@ -29,21 +27,16 @@ int main(int _argc, char *_argv[]) {
     EncoderLibrary *encoder_library = new LameEncoderLibrary();
     Encoder *encoder = encoder_library->ReturnEncoderBySourceType(".wav");
 
-    // Not using IO-purposed threads,
-    // num_threads stands for a thread per a core
     unsigned int num_threads = thread::hardware_concurrency();
 
-    //encoder->set_num_threads(num_threads);
-    encoder->set_num_threads(2);
+    encoder->set_num_threads(1);
     for (auto it=vec_found_files_paths.begin();it!=vec_found_files_paths.end();++it) {
-        //encoder->set_encoding_source_path((*it).c_str());
         encoder->add_encoding_source_path(*it);
-        //encoder->EncodeTo(".mp3");
     }
+
     encoder->EncodeTo(".mp3");
 
-    //delete encoder;
-    //delete encoder_library;
+    delete encoder_library;
 
     return 0;
 }

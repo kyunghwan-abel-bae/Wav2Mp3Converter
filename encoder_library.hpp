@@ -5,16 +5,16 @@
 
 using namespace std;
     
+/*
 typedef struct {
-    //lame_global_flags*   lame;
     lame_t*              lame;
-    //std::vector<unsigned char>*   wav_buffer;
     unsigned char*       wav_buffer;
     unsigned char*       mp3_buffer;
     unsigned int*        num_samples;
     unsigned int*        num_encoded_samples;
     unsigned int         mp3_buffer_size; 
 } LAME_ENCODE_ARGS;
+*/
 
 void* EncodeMP3ByThread(void *thread_args) {
 
@@ -28,17 +28,20 @@ void* EncodeMP3ByThread(void *thread_args) {
     size_t index_dot = str_encoding_source_path.find_last_of(".");
     string str_encoding_destination_path = str_encoding_source_path.substr(0, index_dot) + ".mp3";
 
+//    cout << "source : " << str_encoding_source_path << endl;
+//    cout << "des : " << str_encoding_destination_path << endl;
+
     MyWav wav(source_path);
     if(!wav.is_valid_file()) {
-        cout << "NOT VALID FILE : " << source_path << endl;
-        return NULL;
+        cerr << "NOT VALID FILE : " << source_path << endl;
+        return nullptr;
     }
 
     std::ofstream mp3(str_encoding_destination_path, std::ios_base::binary|std::ios_base::out);
 
-    unsigned int sample_rate = wav.get_samples_per_sec();
-    unsigned int byte_rate = wav.get_avg_bytes_per_sec();
-    unsigned int channels = wav.get_channels();
+    int32_t sample_rate = wav.get_samples_per_sec();
+    int32_t byte_rate = wav.get_avg_bytes_per_sec();
+    int16_t channels = wav.get_channels();
 
     unsigned int offset = 0;
     unsigned int k = (channels == 1) ? 1 : 2;
@@ -76,14 +79,11 @@ void* EncodeMP3ByThread(void *thread_args) {
             int write = 0;
 
             if(channels == 1) {
-                // improved by KH
-                unsigned read_shorts = read / 2;
-                write = lame_encode_buffer( lame, reinterpret_cast<short int*>( &wav_buffer[0] ), NULL, read_shorts, mp3_buffer, kMP3_SIZE );
+                int read_shorts = read / 2;
+                write = lame_encode_buffer( lame, reinterpret_cast<short int*>( &wav_buffer[0] ), nullptr, read_shorts, mp3_buffer, kMP3_SIZE );
             }
             else {
-                // improved by KH
-                unsigned int read_shorts = read / 4;
-
+                int read_shorts = read / 4;
                 write = lame_encode_buffer_interleaved( lame, reinterpret_cast<short int*>( &wav_buffer[0] ), read_shorts, mp3_buffer, kMP3_SIZE );
             }
 
@@ -102,7 +102,7 @@ void* EncodeMP3ByThread(void *thread_args) {
 
     lame_close(lame);
 
-    return NULL;
+    return nullptr;
 }
 
 class Encoder {
@@ -125,42 +125,33 @@ public:
         encoding_source_path_ = encoding_source_path;
     }
 
-    void set_num_threads(int num_threads) {
+    void set_num_threads(unsigned int num_threads) {
         num_threads_ = num_threads;
     }
 
 protected:
-    int num_threads_;
+    unsigned int num_threads_;
     const char* encoding_source_path_;
     vector<string> encoding_source_paths_;
+};
+
+class NullEncoder : public Encoder {
+    ~NullEncoder() {}
+    void EncodeTo(const char* file_type) {}
 };
 
 class LameWavEncoder : public Encoder {
 public:
     ~LameWavEncoder() {}
 
-    void SetLameEncodeOptions(lame_t* lame, unsigned int channels, unsigned int sample_rate, unsigned int byte_rate) {
-        *lame = lame_init();
-
-        lame_set_in_samplerate(*lame, sample_rate);
-        lame_set_brate(*lame, byte_rate);
-
-        if(channels == 1) {
-            lame_set_num_channels(*lame, 1);
-            lame_set_mode(*lame, MONO);
-        }
-        else {
-            lame_set_num_channels(*lame, channels);
-        }
-
-        lame_set_VBR(*lame, vbr_default);
-        lame_init_params(*lame);
-
-    }
-
     void EncodeTo(const char* file_type = "") {
 
-        void* (*func_worker)(void*) = NULL;
+        if(encoding_source_paths_.size() == 0) {
+            cerr << "Target files not found" << endl;
+            return ;
+        }
+
+        void* (*func_worker)(void*) = nullptr;
 
         if(strcmp(file_type, ".mp3") == 0) {
             func_worker = EncodeMP3ByThread;
@@ -173,22 +164,20 @@ public:
         auto it = encoding_source_paths_.begin();
         bool is_done = false;
         while(true) {
-            for(int i=0;i<num_threads_;i++) {
+            for(unsigned int i=0;i<num_threads_;i++) {
                 if(it == encoding_source_paths_.end()) {
                     is_done = true;
                     num_threads_ = i;
                     break;
                 }
 
-                cout << "thread index : " << i << endl;
-
-                pthread_create(&threads[i], NULL, func_worker, (void*)((*it).c_str()));
+                pthread_create(&threads[i], nullptr, func_worker, (void*)((*it).c_str()));
 
                 ++it;
             }
 
-            for(int i=0;i<num_threads_;i++) {
-                pthread_join(threads[i], NULL);
+            for(unsigned int i=0;i<num_threads_;i++) {
+                pthread_join(threads[i], nullptr);
             }
 
             if(is_done)
@@ -216,9 +205,8 @@ public:
             return new LameWavEncoder();
         }
 
-        // checked by KH
-        cout << "unsupported file type" << endl;
-        // return NullEncoder()
-        return NULL;
+        cerr << "Failed to find a proper encoder library" << endl;
+
+        return new NullEncoder();
     }
 };

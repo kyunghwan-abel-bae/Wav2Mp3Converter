@@ -85,7 +85,7 @@ MyWav::MyWav (const char* file_name)
 
     std::ifstream file( file_name, std::ios_base::binary | std::ios_base::in );
     if( file.is_open() == false ) {
-        std::cout << "Failed to open the file" << std::endl;
+        std::cerr << "Failed to open the file" << std::endl;
         is_valid_file_ = false;
         return;
     }
@@ -99,7 +99,7 @@ MyWav::MyWav (const char* file_name)
 
     char label_wav[4] = {'W', 'A', 'V', 'E'};
     if(!std::equal(std::begin(label_wav), std::end(label_wav), std::begin(riff_.riffFORMAT))) {
-        std::cout << "Not WAV File Format" << std::endl;
+        std::cerr << "Not WAV File Format" << std::endl;
         is_valid_file_ = false;
         return;
     }
