@@ -12,6 +12,8 @@ class MyWav {
 public:
     MyWav (const char* file_name);
 
+    bool is_valid_file() { return is_valid_file_; }
+
     int32_t get_samples_per_sec() const;
     int32_t get_avg_bytes_per_sec() const;
     int16_t get_channels() const;
@@ -70,9 +72,13 @@ private:
     DATA                    data_;
     int16_t                 extra_param_length_;
     std::vector<char>       extra_param_;
+
+    bool is_valid_file_;
 };
 
-MyWav::MyWav (const char* file_name) {
+MyWav::MyWav (const char* file_name)
+                                    : is_valid_file_(true)
+{
     fmt_.wFormatTag = 0;
     extra_param_length_ = 0;
     fact_.samplesNumber = -1;
@@ -80,6 +86,8 @@ MyWav::MyWav (const char* file_name) {
     std::ifstream file( file_name, std::ios_base::binary | std::ios_base::in );
     if( file.is_open() == false ) {
         std::cout << "Failed to open the file" << std::endl;
+        is_valid_file_ = false;
+        return;
     }
 
     file.read( reinterpret_cast<char*>( &riff_ ), RIFF_SIZE );
@@ -89,7 +97,12 @@ MyWav::MyWav (const char* file_name) {
 
     unsigned fmt_extra_bytes = fmthdr_.fmtSIZE - FMT_SIZE;
 
-    std::cout << "point" << std::endl;
+    char label_wav[4] = {'W', 'A', 'V', 'E'};
+    if(!std::equal(std::begin(label_wav), std::end(label_wav), std::begin(riff_.riffFORMAT))) {
+        std::cout << "Not WAV File Format" << std::endl;
+        is_valid_file_ = false;
+        return;
+    }
 
     if( fmt_extra_bytes > 0 ) {
         fmt_extra_bytes_.resize( fmt_extra_bytes );

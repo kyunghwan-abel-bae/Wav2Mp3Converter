@@ -29,6 +29,10 @@ void* EncodeMP3ByThread(void *thread_args) {
     string str_encoding_destination_path = str_encoding_source_path.substr(0, index_dot) + ".mp3";
 
     MyWav wav(source_path);
+    if(!wav.is_valid_file()) {
+        cout << "NOT VALID FILE : " << source_path << endl;
+        return NULL;
+    }
 
     std::ofstream mp3(str_encoding_destination_path, std::ios_base::binary|std::ios_base::out);
 
