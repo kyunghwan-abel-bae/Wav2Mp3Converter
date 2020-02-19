@@ -1,14 +1,21 @@
 #include <vector>
-#include <string.h>
+#include <string>
+#include <cstring>
 #include <dirent.h>
 #include <sys/types.h>
 
 using namespace std;
 
+#ifdef WIN32
+#define PATHSEP '\\'
+#else
+#define PATHSEP '/'
+#endif
+
 class FileExplorerOption {
 public:
     enum { 
-        FILE_PATH_LENGTH = 100,
+        FILE_PATH_LENGTH = 255,
     };
 };
 
@@ -30,23 +37,27 @@ public:
             return false;
         
         DIR *dir = opendir(path_);
-        if (dir == NULL)
+        if (dir == nullptr)
             return false;
 
         char dir_path[FileExplorerOption::FILE_PATH_LENGTH] = {0};
         strcat(dir_path, path_);
-        // checked by KH
-        //if(dir_path[strlen(dir_path)-1] != PATH_DIVIDER)
-        if(dir_path[strlen(dir_path)-1] != '/')
-            strcat(dir_path, "/");
+
+        const size_t length_dir_path = strlen(dir_path);
+        if(length_dir_path > FileExplorerOption::FILE_PATH_LENGTH)
+            return false;
+
+        char path_sep[1] = {PATHSEP};
+        if(dir_path[length_dir_path-1] != path_sep[0])
+            strcat(dir_path, path_sep);
 
         struct dirent *entry;
-        while ((entry = readdir(dir)) != NULL) {
+        while ((entry = readdir(dir)) != nullptr) {
 
             const char* file_name = entry->d_name;
             const char* extracted_file_type = strrchr(file_name, '.');
 
-            if(extracted_file_type != NULL) {
+            if(extracted_file_type != nullptr) {
                 if(strcmp(extracted_file_type, file_type) == 0) {
                     char file_path[FileExplorer::FILE_PATH_LENGTH] = {0};
                     strcat(file_path, dir_path);
@@ -66,5 +77,4 @@ public:
 private:
     vector<string> vec_found_files_paths_;
     const char* path_;
-    int count_;
 };
