@@ -17,7 +17,7 @@ typedef struct {
     int* result_status;
 } RESULT_ARGS;
 
-enum THREAD_RESULT_STATUS {
+enum ENCODE_RESULT_STATUS {
     SUCCESS = 0,
     FAILED_NOT_VALID_FILE = -1
 };
@@ -39,7 +39,7 @@ void* EncodeMP3ByThread(void *thread_args) {
     MyWav wav(source_path);
     if(!wav.is_valid_file()) {
         *(args->file_name) = string(wav.get_file_name());
-        *(args->result_status) = THREAD_RESULT_STATUS::FAILED_NOT_VALID_FILE;
+        *(args->result_status) = ENCODE_RESULT_STATUS::FAILED_NOT_VALID_FILE;
         return nullptr;
     }
 
@@ -106,7 +106,7 @@ void* EncodeMP3ByThread(void *thread_args) {
         }
     }
 
-    *(args->result_status) = THREAD_RESULT_STATUS::SUCCESS;
+    *(args->result_status) = ENCODE_RESULT_STATUS::SUCCESS;
     *(args->src_size) = wav.get_file_size();
     *(args->des_size) = mp3.tellp();
     *(args->file_name) = string(wav.get_file_name());
@@ -176,22 +176,18 @@ public:
 
         RESULT_ARGS *args = new RESULT_ARGS[num_threads_];
 
-        /*
-        vector<int> vec_result_status(encoding_source_paths_.size());
-        vector<double> vec_src_size(encoding_source_paths_.size());
-        vector<long> vec_des_size(encoding_source_paths_.size());
-        vector<string> vec_file_name(encoding_source_paths_.size());
-        */
-
-        const vector<string> k_vec_base {"byte", "kB", "MB", "GB"};
+        vec_er_status_.resize(encoding_source_paths_.size());
+        vec_er_src_size_.resize(encoding_source_paths_.size());
+        vec_er_des_size_.resize(encoding_source_paths_.size());
+        vec_er_file_name_.resize(encoding_source_paths_.size());
 
         auto it = encoding_source_paths_.begin();
-        unsigned int it_count = 0;
+        er_count_= 0;
 
         bool is_done = false;
 
-        cout << "==============================" << endl;
-        cout << "ENCODING ..." << endl;
+        cout << "============================================================" << endl;
+        cout << "ENCODING ..." << endl << endl;
         while(true) {
 
             for(unsigned int i=0;i<num_threads_;i++) {
@@ -204,17 +200,17 @@ public:
                 cout << (*it).c_str() << endl;
 
                 args[i].file_path = (*it).c_str();
-                args[i].result_status = &(vec_result_status[it_count]);
-                args[i].src_size = &(vec_src_size[it_count]);
-                args[i].des_size = &(vec_des_size[it_count]);
-                args[i].file_name = &(vec_file_name[it_count]);
+                args[i].result_status = &(vec_er_status_[er_count_]);
+                args[i].src_size = &(vec_er_src_size_[er_count_]);
+                args[i].des_size = &(vec_er_des_size_[er_count_]);
+                args[i].file_name = &(vec_er_file_name_[er_count_]);
 
                 pthread_create(&threads[i], nullptr, func_worker, const_cast<void*>(
                                                                     (reinterpret_cast<const void*>(&args[i]))
                                                                   ));
 
                 it++;
-                it_count++;
+                er_count_++;
             }
 
             for(unsigned int i=0;i<num_threads_;i++) {
@@ -225,8 +221,18 @@ public:
                 break;
         }
 
+        cout << endl << "DONE!" << endl;
+        cout << "============================================================" << endl;
 
-        cout << "==============================" << endl;
+        PrintOutEncodingResult();
+
+        delete[] args;
+        delete[] threads;
+    }
+
+private:
+
+    void PrintOutEncodingResult() {
         cout << "RESULT" << endl << endl;
 
         cout << left;
@@ -238,10 +244,11 @@ public:
         cout << setw(10) << "DESCRIPTION";
         cout << endl;
 
+        const vector<string> k_vec_base {"byte", "kB", "MB", "GB"};
 
-        for(unsigned int i=0;i<it_count;i++) {
-            string str_file_name = vec_file_name[i];
-            string str_result_status = vec_result_status[i] == THREAD_RESULT_STATUS::SUCCESS ? "SUCCESS" : "FAILED";
+        for(unsigned int i=0;i<er_count_;i++) {
+            string str_file_name = vec_er_file_name_[i];
+            string str_result_status = vec_er_status_[i] == ENCODE_RESULT_STATUS::SUCCESS ? "SUCCESS" : "FAILED";
             string str_description;
 
             str_file_name = str_file_name.substr(0, str_file_name.find_last_of("."));
@@ -250,7 +257,7 @@ public:
                 str_file_name = ".." + str_file_name.substr(str_file_name.length()-8, str_file_name.length()-1);
             }
 
-            int result_status = vec_result_status[i];
+            int result_status = vec_er_status_[i];
             double encoded_file_size;
 
             string str_base = k_vec_base[0];
@@ -260,11 +267,11 @@ public:
             double compression_rate = 0;
 
             switch(result_status) {
-            case THREAD_RESULT_STATUS::SUCCESS :
-                encoded_file_size = vec_des_size[i];
+            case ENCODE_RESULT_STATUS::SUCCESS :
+                encoded_file_size = vec_er_des_size_[i];
 
                 for(unsigned int i=1;i<k_vec_base.size();i++) {
-                    if(vec_des_size[i] < base)
+                    if(vec_er_des_size_[i] < base)
                         break;
 
                     encoded_file_size /= base;
@@ -273,8 +280,8 @@ public:
                     base *= 1000.0;
                 }
 
-                if(vec_src_size[i] > 0) {
-                    compression_rate = vec_des_size[i]/vec_src_size[i] * 100;
+                if(vec_er_src_size_[i] > 0) {
+                    compression_rate = vec_er_des_size_[i]/vec_er_src_size_[i] * 100;
 
                     str_compression_rate = "(" + to_string(compression_rate) + "%)";
                 }
@@ -283,7 +290,7 @@ public:
 
                 break;
 
-            case THREAD_RESULT_STATUS::FAILED_NOT_VALID_FILE :
+            case ENCODE_RESULT_STATUS::FAILED_NOT_VALID_FILE :
 
                 str_description = "Not Valid File";
 
@@ -302,16 +309,15 @@ public:
             cout << setw(10) << str_description;
             cout << endl;
         }
-
-        delete[] args;
-        delete[] threads;
     }
 
-private:
-    vector<string> vec_file_name_;
-    vector<int> vec_result_status_;
-    vector<double> vec_src_size_;
-    vector<long> vec_des_size_;
+    // er = encoding result
+    unsigned int er_count_;
+
+    vector<string> vec_er_file_name_;
+    vector<int> vec_er_status_;
+    vector<double> vec_er_src_size_;
+    vector<long> vec_er_des_size_;
 };
 
 class EncoderLibrary {
