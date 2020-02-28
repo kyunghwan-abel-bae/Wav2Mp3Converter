@@ -38,6 +38,7 @@ int main(int _argc, char *_argv[]) {
 
     encoder->EncodeTo(".mp3");
 
+    delete encoder;
     delete encoder_library;
 
     return 0;

@@ -1,6 +1,6 @@
 #define HAVE_STRUCT_TIMESPEC
 
-#ifdef Linux
+#ifdef __linux__
 #include <lame/lame.h>
 #else
 #include <lame.h>
@@ -43,8 +43,11 @@ void* EncodeMP3ByThread(void *thread_args) {
 
     MyWav wav(source_path);
     if(!wav.is_valid_file()) {
-        *(args->file_name) = string(wav.get_file_name());
         *(args->result_status) = ENCODE_RESULT_STATUS::FAILED_NOT_VALID_FILE;
+        *(args->src_size) = 0;
+        *(args->des_size) = 0;
+        *(args->file_name) = string(wav.get_file_name());
+
         return nullptr;
     }
 
@@ -275,13 +278,13 @@ private:
             case ENCODE_RESULT_STATUS::SUCCESS :
                 encoded_file_size = vec_er_des_size_[i];
 
-                for(unsigned int i=1;i<k_vec_base.size();i++) {
+                for(unsigned int j=1;j<k_vec_base.size();j++) {
                     if(vec_er_des_size_[i] < base)
                         break;
 
                     encoded_file_size /= base;
 
-                    str_base = k_vec_base[i];
+                    str_base = k_vec_base[j];
                     base *= 1000.0;
                 }
 
