@@ -9,7 +9,9 @@ using namespace std;
 int main(int _argc, char *_argv[]) {
 
     if (_argc != 2) {
-        cerr << "Usage: " << _argv[0] << " PATH [-nN]" << endl;
+        cerr << "Wav2Mp3Converter - Simple command-line application that encodes a set of WAV files to MP3" << endl;
+        cerr << endl << "Usage: " << "[PATH-TO-Wav2Mp3Converter]/Wav2Mp3Conveter" << " [WAV FILES' LOCATION]" << endl;
+        cerr << "EX) $ /home/user/Desktop/Wav2Mp3Conveter /home/user/sound" << endl << endl;
         return 0;
     }
 
@@ -21,7 +23,7 @@ int main(int _argc, char *_argv[]) {
         cerr << "Failed to find wav files at the " << path << endl;
         return 0;
     }
-    
+
     vector<string> vec_found_files_paths = explorer.vec_found_files_paths();
 
     EncoderLibrary *encoder_library = new LameEncoderLibrary();
@@ -40,5 +42,3 @@ int main(int _argc, char *_argv[]) {
 
     return 0;
 }
-
-
