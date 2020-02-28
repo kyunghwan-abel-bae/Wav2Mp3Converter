@@ -39,7 +39,7 @@ public:
             return false;
 
         char dir_path[FileExplorerOption::FILE_PATH_LENGTH] = {0};
-        strcat_s(dir_path, FileExplorerOption::FILE_PATH_LENGTH, path_);
+        strcat(dir_path, path_);
 
         const size_t length_dir_path = strlen(dir_path);
         if(length_dir_path > FileExplorerOption::FILE_PATH_LENGTH)

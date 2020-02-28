@@ -1,6 +1,11 @@
 #define HAVE_STRUCT_TIMESPEC
 
+#ifdef Linux
+#include <lame/lame.h>
+#else
 #include <lame.h>
+#endif
+
 #include <pthread.h>
 
 #include <iomanip>
