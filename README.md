@@ -1,16 +1,79 @@
+
+# Executable file
+
+## Windows : release/Wav2Mp3Converter.exe (Download)
+## Ubuntu : release/Wav2Mp3Conveter (Download)
+
+# Build environment
+
+## Windows
+- OS : Windows 10
+- Used Tools(32 bit) : Qt(5.12.0), Lame(3.100), pthread(pthreads-w32-2-9-1-release), MSVC2017(Community), Python(2.7)
+- If you failed to build the project, then you should make a proper build environment based on below "Steps to build".
+- Steps to build
+  - Install Python 2.7, and Add paths(C:\Python27, C:\Python27\Scripts) to Path variable in System variables
+  - Install Visual Studio 2017 Community(including Visual C++ ATL&MFC for x86)
+  - Open the Visual Studio 2017 Developer Command Prompt(Community)
+  - Static qt configure : configure.bat -static -debug-and-release -prefix C:\Qt\static\5.12.0 -platform win32-msvc -opensource -confirm-license -nomake examples -nomake tests -static-runtime -opengl desktop -force-debug-info
+  - nmake & nmake install
+  - In the pthreads.2 folder, nmake clean VC-static & nmake install
+  - Generate static lame lib from vc_solution
+  - Download dirent from https://github.com/tronkko/dirent
+  - In the Wav2Mp3Converter.pro, set paths about lame, pthread, dirent and msvc libs(msvcrt.lib, msvcmrt.lib)
+
 # Challenge logs
 
 All notable logs show how I solved many issues in this project
 
+## 2020-3-8
+
+- Success to deploy windows application
+- App runs on the Windows 7 without problems
+
+## 2020-3-7
+
+- Add paths about lame's static lib and include in .pro file (version : lame-3.100 from https://lame.sourceforge.io/download.php)
+  - Solve the error about "__imp__strncpy" at the compile by linking the msvcrt.lib and msvcmrt.lib in MSVC
+- Add paths about pthread's static lib and include in .pro file (version : pthreads-w32-2-9-1-release from https://sourceware.org/pthreads-win32)
+  - A lib file of the prebuilt version is not for static compile, A lib file should be generated from the pthread source
+- To get information of files and directories under Linux/UNIX style, download dirent.h from https://github.com/tronkko/dirent, and add a path in .pro file
+- For the static compile, put below codes where the pthread is created and deleted
+  - BOOL pthread_win32_process_attach_np (void);
+  - BOOL pthread_win32_process_detach_np (void);
+  - BOOL pthread_win32_thread_attach_np (void);
+  - BOOL pthread_win32_thread_detach_np (void);
+
+## 2020-3-1
+
+- Set C++ static-build environments for Windows using Qt
+- Build based on qt-everywhere-src-5.12.0, not existed version
+
+## 2020-2-29
+
+- Calcuate a compression rate
+- Print the encoding process and result
+
+## 2020-2-23
+
+- Prepare and build Windows lame libraries through the Visual Studio Solution file in the 'lame-3.100' which can be found at the official website
+- Solve a pthread error about <'timespec': 'struct' type redefinition> by specifying #define HAVE_STRUCT_TIMESPEC
+
+## 2020-2-22
+
+- Implement the filter for dummy wav files using riff fields
+- Setting multiplatform variables such as win32, __linux__, etc
+
 ## 2020-2-18
+
 - Encoding works with the file-based encoding in the multi-thread environment
 
 ## 2020-2-16
-- Through debug process, there are thread safe issues. Each pthread processes are affected by each other when the function has global pthread variable.
 
-I found out lame encode functions are not working correctly at the pthread environment because of thread safe issue 
+- Through debug process, there are thread safe issues. Each pthread processes are affected by each other when the function has global pthread variable.
+- I found out lame encode functions are not working correctly at the pthread environment because of thread safe issue
 
 ## 2020-2-13
+
 - Using Qt, I imported project in OS X for efficient debugging (Debug issue is about lame functions in multi-thread encoding)
 
 ## 2020-2-11

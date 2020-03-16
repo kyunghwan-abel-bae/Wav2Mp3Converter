@@ -3,6 +3,7 @@ CONFIG += console c++11
 CONFIG -= app_bundle
 CONFIG -= qt
 
+# For test and debug only
 osx {
     LIBS += -L/usr/local/Cellar/lame/3.100/lib -lmp3lame \
             -lpthread \
@@ -10,13 +11,20 @@ osx {
     INCLUDEPATH +=  "/Users/Abel/Shared/2019_2/Europe/coding_test/cinemo/lib/lame-3.100/include" \
 }
 
+# For windows build configuration
 win32 {
-    LIBS += -L"C:\Users\tredi\Desktop\lame-3.100.tar\lame-3.100\output\Release" -llibmp3lame-static -llibmpghip-static \
-            -L"C:\Users\tredi\Desktop\pthread" -lpthreadVC2
+    # HERE YOU CAN SET PATH
+    LIBS += -L"$$PWD\external_libs\lame\lib" -llibmp3lame-static -llibmpghip-static \
+            -L"$$PWD\external_libs\pthread\lib" -lpthreadVC2 \
+            -L"$$PWD\external_libs\msvc\lib" -lmsvcrt -lmsvcmrt
 
-    INCLUDEPATH +=  "C:\Users\tredi\Desktop\lame-3.100.tar\lame-3.100\include" \
-                    "C:\Users\tredi\Desktop\pthread" \
-                    "C:\Users\tredi\Desktop\dirent\include"
+    # HERE YOU CAN SET PATH
+    INCLUDEPATH +=  "$$PWD\external_libs\lame\include" \
+                    "$$PWD\external_libs\pthread\include" \
+                    "$$PWD\external_libs\dirent\include"
+
+    CONFIG += static
+    QMAKE_LFLAGS += "/nodefaultlib:MSVCRT"
 }
 
 SOURCES += \

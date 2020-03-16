@@ -1,13 +1,9 @@
 #define HAVE_STRUCT_TIMESPEC
 
-#ifdef __linux__
+#define PTW32_STATIC_LIB
+
 #include <lame/lame.h>
-#else
-#include <lame.h>
-#endif
-
 #include <pthread.h>
-
 #include <iomanip>
 
 #include "my_wav.hpp"
@@ -180,6 +176,11 @@ public:
         if(func_worker == nullptr)
             return;
 
+#ifdef WIN32
+        pthread_win32_process_attach_np();
+        pthread_win32_thread_attach_np();
+#endif
+
         pthread_t *threads = new pthread_t[num_threads_];
 
         RESULT_ARGS *args = new RESULT_ARGS[num_threads_];
@@ -236,6 +237,11 @@ public:
 
         delete[] args;
         delete[] threads;
+
+#ifdef WIN32
+        pthread_win32_thread_detach_np();
+        pthread_win32_process_detach_np();
+#endif
     }
 
 private:

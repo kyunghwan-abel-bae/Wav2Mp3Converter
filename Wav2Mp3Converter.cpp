@@ -20,7 +20,9 @@ int main(int _argc, char *_argv[]) {
     FileExplorer explorer(path);
 
     if(!explorer.ExploreWithFileType(".wav")) {
-        cerr << "Failed to find wav files at the " << path << endl;
+        cerr << endl;
+        cerr << "Failed to find wav files at the below path : " << endl;
+        cerr << "      " << path << endl << endl;
         return 0;
     }
 
