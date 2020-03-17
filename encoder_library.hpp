@@ -38,6 +38,7 @@ void* EncodeMP3ByThread(void *thread_args) {
     string str_encoding_destination_path = str_encoding_source_path.substr(0, index_dot) + ".mp3";
 
     MyWav wav(source_path);
+
     if(!wav.is_valid_file()) {
         *(args->result_status) = ENCODE_RESULT_STATUS::FAILED_NOT_VALID_FILE;
         *(args->src_size) = 0;
@@ -76,7 +77,6 @@ void* EncodeMP3ByThread(void *thread_args) {
 
     lame_set_VBR(lame, vbr_default);
     lame_init_params(lame);
-
 
     while( true ) {
         wav.get_samples( offset, size, wav_buffer );

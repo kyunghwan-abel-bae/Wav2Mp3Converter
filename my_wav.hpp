@@ -122,7 +122,9 @@ MyWav::MyWav (const char* file_path)
     unsigned fmt_extra_bytes = fmthdr_.fmtSIZE - FMT_SIZE;
 
     char label_wav[4] = {'W', 'A', 'V', 'E'};
-    if(!std::equal(std::begin(label_wav), std::end(label_wav), std::begin(riff_.riffFORMAT))) {
+
+    if( !file ||
+            !std::equal(std::begin(label_wav), std::end(label_wav), std::begin(riff_.riffFORMAT))) {
         is_valid_file_ = false;
         return;
     }
