@@ -1,14 +1,32 @@
 
-# Executable file
+# How to run "Wav2Mp3Converter"
 
-## Windows : release/Wav2Mp3Converter.exe (Download)
-## Ubuntu : release/Wav2Mp3Conveter (Download)
+<pre>
+<code>
+Usage: [PATH-TO-Wav2Mp3Converter]/Wav2Mp3Conveter [WAV FILES' LOCATION]
+
+EX) $ /home/user/Desktop/Wav2Mp3Conveter /home/user/sound
+</code>
+</pre>
+
+## Windows
+
+- EXE Download link : [CLICK HERE](https://github.com/kyunghwan-abel-bae/Wav2Mp3Converter/releases/download/1.0/Wav2Mp3Converter.exe)
+  - This is a static version, it works without pthread dynamic libs
+
+## Linux
+
+- To run, the make process is required
+- Install the package follwing the build environment below
+
+* * *
 
 # Build environment
 
 ## Windows
+
 - OS : Windows 10
-- Used Tools(32 bit) : Qt(5.12.0), Lame(3.100), pthread(pthreads-w32-2-9-1-release), MSVC2017(Community), Python(2.7)
+- Tools(32 bit) : Qt(5.12.0), Lame(3.100), pthread(pthreads-w32-2-9-1-release), MSVC2017(Community), Python(2.7)
 - If you failed to build the project, then you should make a proper build environment based on below "Steps to build".
 - Steps to build
   - Install Python 2.7, and Add paths(C:\Python27, C:\Python27\Scripts) to Path variable in System variables
@@ -21,9 +39,19 @@
   - Download dirent from https://github.com/tronkko/dirent
   - In the Wav2Mp3Converter.pro, set paths about lame, pthread, dirent and msvc libs(msvcrt.lib, msvcmrt.lib)
 
+## Linux
+
+- OS : Ubuntu 18.04
+- Tools : make, g++(7.5.0), Lame(3.100), pthread(already installed with Ubuntu 18.04, it is part of the GNU C Library)
+- A Makefile is included, run make to build
+
 # Challenge logs
 
 All notable logs show how I solved many issues in this project
+
+## 2020-3-17
+
+- Fix the memory vulnerability which is detected by valgrind
 
 ## 2020-3-8
 
@@ -63,14 +91,14 @@ All notable logs show how I solved many issues in this project
 - Implement the filter for dummy wav files using riff fields
 - Setting multiplatform variables such as win32, __linux__, etc
 
-## 2020-2-18
+## 2020-2-18 *
 
+- Switch from the sample-based encoding to the file-based encoding
 - Encoding works with the file-based encoding in the multi-thread environment
 
-## 2020-2-16
+## 2020-2-16 *
 
-- Through debug process, there are thread safe issues. Each pthread processes are affected by each other when the function has global pthread variable.
-- I found out lame encode functions are not working correctly at the pthread environment because of thread safe issue
+- Through debug process, there are thread safe issues in lame encode functions. A pthread process affected the other thread processes
 
 ## 2020-2-13
 
