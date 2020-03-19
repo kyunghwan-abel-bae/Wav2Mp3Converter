@@ -21,7 +21,7 @@ win32 {
     # HERE YOU CAN SET PATH
     INCLUDEPATH +=  "$$PWD\external_libs\lame\include" \
                     "$$PWD\external_libs\pthread\include" \
-#                    "$$PWD\external_libs\dirent\include"
+                    "$$PWD\external_libs\dirent\include"
 
     CONFIG += static
     QMAKE_LFLAGS += "/nodefaultlib:MSVCRT"
