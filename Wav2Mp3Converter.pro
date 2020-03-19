@@ -21,7 +21,7 @@ win32 {
     # HERE YOU CAN SET PATH
     INCLUDEPATH +=  "$$PWD\external_libs\lame\include" \
                     "$$PWD\external_libs\pthread\include" \
-                    "$$PWD\external_libs\dirent\include"
+#                    "$$PWD\external_libs\dirent\include"
 
     CONFIG += static
     QMAKE_LFLAGS += "/nodefaultlib:MSVCRT"
@@ -32,5 +32,6 @@ SOURCES += \
 
 HEADERS += \
     encoder_library.hpp \
+    external_libs/dirent/include/dirent.h \
     file_explorer.hpp \
     my_wav.hpp

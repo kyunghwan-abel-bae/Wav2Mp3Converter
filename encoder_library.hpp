@@ -190,8 +190,10 @@ public:
         vec_er_des_size_.resize(encoding_source_paths_.size());
         vec_er_file_name_.resize(encoding_source_paths_.size());
 
+        unsigned int max_threads_count = num_threads_;
+
         auto it = encoding_source_paths_.begin();
-        er_count_= 0;
+        er_count_= 0; // er stands for "encoding result"
 
         bool is_done = false;
 
@@ -230,7 +232,11 @@ public:
                 break;
         }
 
+        unsigned int used_threads_count = er_count_ < max_threads_count ? er_count_ : max_threads_count;
+
         cout << endl << "DONE!" << endl;
+        cout << endl << "USED THREADS COUNT : " << used_threads_count << endl;
+
         cout << "============================================================" << endl;
 
         PrintOutEncodingResult();
