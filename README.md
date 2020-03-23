@@ -11,7 +11,7 @@ EX) $ /home/user/Desktop/Wav2Mp3Conveter /home/user/sound
 
 ## Windows
 
-- EXE Download link : [CLICK HERE](https://github.com/kyunghwan-abel-bae/Wav2Mp3Converter/releases/download/1.0/Wav2Mp3Converter.exe)
+- EXE Download link : [CLICK HERE](https://github.com/kyunghwan-abel-bae/Wav2Mp3Converter/releases/download/1.1/Wav2Mp3Converter.exe)
   - This is a static version, it works without pthread dynamic libs
 
 ## Linux
@@ -44,6 +44,7 @@ EX) $ /home/user/Desktop/Wav2Mp3Conveter /home/user/sound
 - OS : Ubuntu 18.04
 - Tools : make, g++(7.5.0), Lame(3.100), pthread(already installed with Ubuntu 18.04, it is part of the GNU C Library)
 - A Makefile is included, run make to build
+  - g++ *.cpp -o Wav2Mp3Converter -lpthread -lmp3lame
 
 # Challenge logs
 

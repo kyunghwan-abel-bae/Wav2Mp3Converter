@@ -28,10 +28,12 @@ win32 {
 }
 
 SOURCES += \
-        Wav2Mp3Converter.cpp \
+    Wav2Mp3Converter.cpp \
+    encoder_library.cpp \
+    file_explorer.cpp \
+    my_wav.cpp
 
 HEADERS += \
     encoder_library.hpp \
-    external_libs/dirent/include/dirent.h \
     file_explorer.hpp \
     my_wav.hpp
